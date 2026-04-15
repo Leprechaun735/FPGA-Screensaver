@@ -1,0 +1,51 @@
+Library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+entity vga_640x480 is
+-- add input/output interface
+end vga_640x480;
+architecture behavioral of vga_640x480 is
+constant hpixels : std_logic_vector(9 downto 0) := "__________"; -- 800 = pixels in a horizontal line
+constant vlines : std_logic_vector(9 downto 0) := "__________"; -- 521 = number of horizontal lines
+constant hbp : std_logic_vector(9 downto 0) := "__________"; -- 144(128+16) = end of hor. back porch
+constant hfp : std_logic_vector(9 downto 0) := "__________"; -- 784(128+16+640) = start of hor. front porch
+constant vbp : std_logic_vector(9 downto 0) := "__________"; -- 31(2+29) = end of vert. back porch
+constant vfp : std_logic_vector(9 downto 0) := "__________"; -- 511(2+29+480) = start of vert. front porch
+signal hcs, vcs : std_logic_vector(9 downto 0); -- horizontal and vertical counters
+signal vsenable : std_logic; -- enable for the vertical counter
+begin
+process(clk, rst) -- counter for horizontal sync signal
+begin
+if(rst='0') then
+hcs <= "__________";
+elsif(clk'event and clk='1') then
+if(hcs = _______) then
+hcs <= "__________"; -- reset horizontal counter
+vsenable <= ___; -- turn on vertical counter
+else
+hcs <= _______; -- increment horizontal counter
+vsenable <= ___; -- turn off vsenable
+end if;
+end if;
+end process;
+hsync <= '0' when hcs < 96 else '1'; -- horizontal sync pulse
+process(clk, rst, vsenable) -- counter for vertical sync signal
+begin
+if(rst='0') then
+vcs <= "___________";
+elsif(clk'event and clk='1' and vsenable='1') then
+if(vcs=_______) then -- check if counted full range
+vcs <= "__________";
+else
+vcs <= ________; -- increment vertical counter
+end if;
+end if;
+end process;
+vsync <= '0' when vcs < 2 else '1';
+-- enable video output within the porches
+videon <= '1' when (((hcs < ___) and (hcs >= ___))
+and ((vcs < ___) and (vcs >= ___ ))) else '0';
+-- output horizontal and vertical counter
+hc <= hcs;
+vc <= vcs;
+end behavioral;

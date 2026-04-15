@@ -1,0 +1,31 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity clock_divider is
+    Port (
+        clk_in   : in  STD_LOGIC;  -- 50 MHz input clock
+        clk_out  : out STD_LOGIC   -- 25.175 MHz output clock
+    );
+end clock_divider;
+
+architecture Behavioral of clock_divider is
+    constant DIV_RATIO : integer := 9867;  -- Scaled division ratio (1.9867 scaled by 10,000)
+    constant SCALE     : integer := 10000; -- Scale factor
+    signal accumulator : integer range 0 to SCALE - 1 := 0;
+    signal clk_reg     : STD_LOGIC := '0';
+begin
+    process(clk_in)
+    begin
+        if rising_edge(clk_in) then
+            accumulator <= accumulator + DIV_RATIO;
+            if accumulator >= SCALE then
+                accumulator <= accumulator - SCALE; -- Wrap the accumulator
+                clk_reg <= not clk_reg; -- Toggle the output clock
+            end if;
+        end if;
+    end process;
+    
+    clk_out <= clk_reg;
+end Behavioral;

@@ -1,0 +1,75 @@
+-- Add needed library and package
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity vga_sprite_rom is
+    generic (
+        W : integer := 16; -- width of the sprite in pixels
+        H : integer := 16  -- height of the sprite in pixels
+    );
+    port (
+        hc      : in std_logic_vector(9 downto 0); -- horizontal counter
+        vc      : in std_logic_vector(9 downto 0); -- vertical counter
+        videon  : in std_logic;                    -- video enable signal
+        red     : out std_logic_vector(3 downto 0);
+        green   : out std_logic_vector(3 downto 0);
+        blue    : out std_logic_vector(3 downto 0)
+    );
+end vga_sprite_rom;
+
+architecture behavioral of vga_sprite_rom is
+    -- Back porch constants
+    constant hbp : std_logic_vector(9 downto 0) := "0010010000"; -- horizontal back porch (144)
+    constant vbp : std_logic_vector(9 downto 0) := "0000011111"; -- vertical back porch (31)
+    
+    -- Sprite position (top-left corner)
+    signal C1, R1 : std_logic_vector(9 downto 0); -- left-upper corner of sprite
+    signal x_pix, y_pix : std_logic_vector(9 downto 0); -- sprite relative coordinates
+    signal spriteon : std_logic; -- sprite enable signal
+    signal rom_data : std_logic_vector(7 downto 0); -- ROM data bus
+    signal rom_ptr : integer range 0 to (W * H - 1); -- ROM pointer
+    
+    -- ROM memory array
+    type memory is array (0 to (W * H - 1)) of std_logic_vector(7 downto 0);
+    signal rom : memory;
+    
+    -- Initialize ROM with a .mif file
+    attribute romstyle : STRING;
+    attribute romstyle OF rom : SIGNAL IS "M4K";
+begin
+    -- Set the sprite's initial position
+    C1 <= "0001000000"; -- X-coordinate of top-left corner (64)
+    R1 <= "0000100000"; -- Y-coordinate of top-left corner (32)
+    
+    -- Calculate relative pixel positions
+    y_pix <= vc - vbp - R1; -- sprite relative Y coordinate
+    x_pix <= hc - hbp - C1; -- sprite relative X coordinate
+    
+    -- Enable sprite display when within bounds
+    spriteon <= '1' when (((hc >= C1) and (hc < C1 + std_logic_vector(to_unsigned(W, 10)))) and
+                          ((vc >= R1) and (vc < R1 + std_logic_vector(to_unsigned(H, 10))))) 
+               else '0';
+    
+    -- Calculate ROM pointer based on relative position
+    rom_ptr <= to_integer(unsigned(y_pix)) * W + to_integer(unsigned(x_pix));
+    
+    -- Fetch ROM data
+    rom_data <= rom(rom_ptr);
+    
+    -- Generate color output based on sprite and video enable signals
+    process(spriteon, videon, rom_data)
+    begin
+        -- Default to black
+        red <= "0000";
+        green <= "0000";
+        blue <= "0000";
+        
+        if spriteon = '1' and videon = '1' then
+            -- Decode color stored in ROM
+            red <= rom_data(7 downto 6) & "00";    -- red component
+            green <= rom_data(5 downto 4) & "00";  -- green component
+            blue <= rom_data(3 downto 2) & "00";   -- blue component
+        end if;
+    end process;
+end behavioral;
